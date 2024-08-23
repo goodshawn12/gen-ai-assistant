@@ -9,6 +9,18 @@ readme = "README.md"
 python = "^3.12"
 openai = "^1.41.0"
 python-dotenv = "^1.0.1"
+langchain = "^0.2.14"
+langchain-community = "^0.2.12"
+pypdf = "^4.3.1"
+yt-dlp = "^2024.8.6"
+beautifulsoup4 = "^4.12.3"
+langchain-openai = "^0.1.22"
+chromadb = "^0.5.5"
+tiktoken = "^0.7.0"
+lark = "^1.2.2"
+panel = "^1.4.5"
+docarray = "^0.40.0"
+jupyter-bokeh = "^4.0.5"
 
 
 [build-system]
