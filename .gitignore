@@ -1,2 +1,7 @@
 .env
+.deepeval*
+.vscode
+.pytest_cache
 docs/*
+mlruns
+__pycache__
