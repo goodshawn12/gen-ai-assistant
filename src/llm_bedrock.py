@@ -3,6 +3,12 @@ import botocore
 import json
 from typing import Dict, Any
 from botocore.exceptions import ClientError
+from langchain_community.chat_models import BedrockChat
+from deepeval.models.base_model import DeepEvalBaseLLM
+from deepeval import assert_test
+from deepeval.test_case import LLMTestCase
+from deepeval.metrics import AnswerRelevancyMetric
+
 
 class BedrockLLMClient:
     def __init__(self, region_name: str):
@@ -48,6 +54,41 @@ class BedrockLLMClient:
         except Exception as e:
             print(f"An error occurred while sending the prompt: {e}")
             return str(e)
+        
+
+class AWSBedrock(DeepEvalBaseLLM):
+    def __init__(
+        self,
+        model
+    ):
+        self.model = model
+
+    def load_model(self):
+        return self.model
+
+    def generate(self, prompt: str) -> str:
+        chat_model = self.load_model()
+        return chat_model.invoke(prompt).content
+
+    async def a_generate(self, prompt: str) -> str:
+        chat_model = self.load_model()
+        res = await chat_model.ainvoke(prompt)
+        return res.content
+
+    def get_model_name(self):
+        return "Custom Azure OpenAI Model"
+
+
+def test_answer_relevancy():
+    answer_relevancy_metric = AnswerRelevancyMetric(model=AWSBedrock, threshold=0.5)
+    test_case = LLMTestCase(
+        input="What if these shoes don't fit?",
+        # Replace this with the actual output of your LLM application
+        actual_output="We offer a 30-day full refund at no extra cost.",
+        retrieval_context=["All customers are eligible for a 30 day full refund at no extra cost."]
+    )
+    assert_test(test_case, [answer_relevancy_metric])
+
 
 # Example usage:
 if __name__ == "__main__":
@@ -87,4 +128,15 @@ if __name__ == "__main__":
 
     print(response_body.get("results")[0].get("outputText"))
 
-        
+    # # Replace these with real values
+    # custom_model = BedrockChat(
+    #     credentials_profile_name= "default",
+    #     region_name="us-west-2",
+    #     endpoint_url="https://bedrock-runtime.us-west-2.amazonaws.com",
+    #     model_id="anthropic.claude-3-haiku-20240307-v1:0",
+    #     model_kwargs={"temperature": 0.4},
+    # )
+
+    # aws_bedrock = AWSBedrock(model=custom_model)
+    # print(aws_bedrock.generate("Write me a joke"))
+    

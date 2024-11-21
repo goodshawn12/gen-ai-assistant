@@ -1,36 +1,42 @@
-from langchain_community.chat_models import BedrockChat
-from deepeval.models.base_model import DeepEvalBaseLLM
+from datetime import datetime
 
-class AWSBedrock(DeepEvalBaseLLM):
-    def __init__(
-        self,
-        model
-    ):
-        self.model = model
 
-    def load_model(self):
-        return self.model
+def assess_bp(data_sbp: int, data_dbp: int) -> dict:
+    if data_sbp < 90 or data_dbp < 50:
+        is_normal_bp = 0
+        bp_message = (
+            "Thanks for sharing your reading! Your blood pressure reading is abnormal today. "
+            "If you haven't done so, could you recheck your blood pressure to ensure the reading is accurate?\n"
+        )
+    elif data_sbp >= 130 or data_dbp >= 90:
+        is_normal_bp = 0
+        bp_message = (
+            "Thanks for sharing your reading! Your blood pressure is higher than normal today. "
+            "Watch for the following symptoms such as dizziness, headache, and chest discomfort. "
+            "Contact your provider if needed. Otherwise, recheck your blood pressure after a few minutes of rest.\n"
+        )
+    else:
+        is_normal_bp = 1
+        bp_message = "Thanks for sharing your reading! Your blood pressure looks great.\n"
 
-    def generate(self, prompt: str) -> str:
-        chat_model = self.load_model()
-        return chat_model.invoke(prompt).content
+    return {"isNormalBP": is_normal_bp, "bpMessage": bp_message}
 
-    async def a_generate(self, prompt: str) -> str:
-        chat_model = self.load_model()
-        res = await chat_model.ainvoke(prompt)
-        return res.content
 
-    def get_model_name(self):
-        return "Custom Azure OpenAI Model"
+def assess_outdoor_env(
+    temperature: float, weather_main: str, current_time: datetime, sunrise: datetime, sunset: datetime
+) -> dict:
+    if sunrise <= current_time <= sunset:
+        day_or_night = "daytime"
+    else:
+        day_or_night = "nighttime"
 
-# Replace these with real values
-custom_model = BedrockChat(
-    credentials_profile_name= "default",
-    region_name="us-west-2",
-    endpoint_url="https://bedrock-runtime.us-west-2.amazonaws.com",
-    model_id="anthropic.claude-3-haiku-20240307-v1:0",
-    model_kwargs={"temperature": 0.4},
-)
+    is_good_temp = 45 <= temperature <= 90
+    is_rain = "rain" in weather_main.lower()
+    in_or_out = "indoor" if is_rain or not is_good_temp or day_or_night == "nighttime" else "outdoor"
 
-aws_bedrock = AWSBedrock(model=custom_model)
-print(aws_bedrock.generate("Write me a joke"))
+    return {
+        "inOrOut": in_or_out,
+        "dayOrNight": day_or_night,
+        "isGoodTemp": is_good_temp,
+        "isRain": is_rain
+    }
