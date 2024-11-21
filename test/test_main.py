@@ -1,6 +1,6 @@
 import unittest
 from datetime import datetime, timedelta
-from src.main import assess_bp, assess_outdoor_env
+from src.main import assess_bp, assess_outdoor_env, to_epoch_timestamp
 
 
 class TestFunctions(unittest.TestCase):
@@ -67,6 +67,18 @@ class TestFunctions(unittest.TestCase):
                 "isRain": False,
             }
         )
+
+    def test_to_epoch_timestamp(self):
+        # Test with a string input
+        date_time_str = "2024-11-21T10:30:00+00"
+        expected_epoch = 1732185000  # Epoch timestamp for this date and time
+        self.assertEqual(to_epoch_timestamp(date_time_str), expected_epoch)
+
+        # Test with another string input
+        date_time_str2 = "2024-11-21T10:30:00-08"  # default is local time zone
+        expected_epoch2 = 1732213800  # Epoch timestamp for this date and time
+        self.assertEqual(to_epoch_timestamp(date_time_str2), expected_epoch2)
+
 
 if __name__ == "__main__":
     unittest.main()

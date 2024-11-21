@@ -2,6 +2,7 @@
 .deepeval*
 .vscode
 .pytest_cache
+*.log
 docs/*
 mlruns
 __pycache__
