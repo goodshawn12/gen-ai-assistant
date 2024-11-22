@@ -2,6 +2,7 @@ import os
 import logging
 import requests
 from datetime import datetime, timezone, timedelta
+from zoneinfo import ZoneInfo
 
 weather_api_key = os.getenv('REACT_APP_WEATHER_API_KEY')
 if weather_api_key is None:
@@ -111,15 +112,14 @@ def get_weather(date_time: any, city_name: any) -> dict:
         response = requests.get(api_url)
         response.raise_for_status()
         data = response.json()
-        data_current = data["data"][0]
 
-        # Extract relevant data
-        temperature = data_current["temp"]
-        time_zone_offset = data["timezone_offset"]
-        current_time = datetime.fromtimestamp(data_current["dt"] + time_zone_offset, tz=timezone.utc)
-        sunrise = datetime.fromtimestamp(data_current["sunrise"] + time_zone_offset, tz=timezone.utc)
-        sunset = datetime.fromtimestamp(data_current["sunset"] + time_zone_offset, tz=timezone.utc)
+        # Extract relevant dat
+        data_current = data["data"][0]
         time_zone = data["timezone"]
+        current_time = datetime.fromtimestamp(data_current["dt"], tz=ZoneInfo(time_zone))
+        sunrise = datetime.fromtimestamp(data_current["sunrise"], tz=ZoneInfo(time_zone))
+        sunset = datetime.fromtimestamp(data_current["sunset"], tz=ZoneInfo(time_zone))
+        temperature = data_current["temp"]
         uvi = data_current["uvi"]
         weather_main = data_current["weather"][0]["main"]
 
@@ -128,8 +128,8 @@ def get_weather(date_time: any, city_name: any) -> dict:
 
         # Construct weather message and data
         weather_message = f"{in_or_out}, {day_or_night}"
-        weather_time = f"{current_time.isoformat()} ({time_zone})"
-        weather_data = f"""Current Time: {weather_time}\nTemperature: {temperature}F\nWeather: {weather_main}\nUV Index: {uvi}\nSunrise Time: {sunrise.isoformat()}\nSunset Time: {sunset.isoformat()}\nRecommendation: {in_or_out}, {day_or_night}"""
+        weather_time = f"{current_time.strftime("%Y-%m-%d %H:%M:%S")} ({time_zone})"
+        weather_data = f"""Current Time: {weather_time}\n Temperature: {temperature}F\n Weather: {weather_main}\n UV Index: {uvi}\n Sunrise Time: {sunrise.strftime("%H:%M:%S")}\n Sunset Time: {sunset.strftime("%H:%M:%S")}\n Recommendation: {in_or_out}, {day_or_night}"""
 
     except (requests.RequestException, KeyError) as error:
         logging.error("Error fetching weather data: %s", error)
@@ -138,7 +138,7 @@ def get_weather(date_time: any, city_name: any) -> dict:
 
 
 if __name__ == "__main__":
-    date_time = "2024-11-21T10:30:00+00:00"
-    city_name = "San Francisco"
+    date_time = "2024-11-21T10:30:00-08"
+    city_name = "San Diego"
     weather_info = get_weather(date_time, city_name)
     logging.info(weather_info)
