@@ -58,7 +58,7 @@ def assess_bp(data_sbp: int, data_dbp: int) -> dict:
         is_normal_bp = 1
         bp_message = "Thanks for sharing your reading! Your blood pressure looks great.\n"
 
-    return {"isNormalBP": is_normal_bp, "bpMessage": bp_message}
+    return {"is_normal_bp": is_normal_bp, "bp_message": bp_message}
 
 
 def assess_outdoor_env(
@@ -129,16 +129,113 @@ def get_weather(date_time: any, city_name: any) -> dict:
         # Construct weather message and data
         weather_message = f"{in_or_out}, {day_or_night}"
         weather_time = f"{current_time.strftime("%Y-%m-%d %H:%M:%S")} ({time_zone})"
-        weather_data = f"""Current Time: {weather_time}\n Temperature: {temperature}F\n Weather: {weather_main}\n UV Index: {uvi}\n Sunrise Time: {sunrise.strftime("%H:%M:%S")}\n Sunset Time: {sunset.strftime("%H:%M:%S")}\n Recommendation: {in_or_out}, {day_or_night}"""
+        weather_data = f"Current Time: {weather_time}\n Temperature: {temperature}F\n Weather: {weather_main}\n UV Index: {uvi}\n Sunrise Time: {sunrise.strftime("%H:%M:%S")}\n Sunset Time: {sunset.strftime("%H:%M:%S")}\n Recommendation: {in_or_out}, {day_or_night}"
 
     except (requests.RequestException, KeyError) as error:
         logging.error("Error fetching weather data: %s", error)
 
-    return {"weatherMessage": weather_message, "weatherData": weather_data, "weatherTime": weather_time}
+    return {"weather_message": weather_message, "weather_data": weather_data, "weather_time": weather_time}
+
+
+def run_ai_pipeline_single_request(input_dict: dict):
+
+    # Extract values from the input dictionary
+    patient_name = input_dict.get("patientName")
+    patient_sex = input_dict.get("patientSex")
+    patient_age = input_dict.get("patientAge")
+    patient_act = input_dict.get("patientAct")
+    data_sbp = input_dict.get("data_sbp")
+    data_dbp = input_dict.get("data_dbp")
+    location_city_name = input_dict.get("location_city_name")
+    record_data_time = input_dict.get("record_data_time")
+    history_bp = input_dict.get("history_bp")
+    history_message = input_dict.get("history_message")
+
+    patient_info = f"Sex: {patient_sex}; Age: {patient_age};"
+    header_message = f"Dear {patient_name}, "
+
+    # TODO: assume blood pressure is integer, to accommodate float in the future        
+    dict_bp = assess_bp(int(data_sbp), int(data_dbp))
+    logging.info(dict_bp)
+
+    dict_weather = get_weather(record_data_time, location_city_name)
+    logging.info(dict_weather)
+
+    llm_on_history = "Sample LLM response on BP history. "
+    if history_bp != "":
+        bp_history = f"{history_bp}\n{dict_weather.get("weather_time")}, {data_sbp}, {data_dbp};"
+
+        # # Call the Bedrock API with the necessary parameters
+        # response = await amplify_client.queries.ask_bedrock({
+        #     "patientMessage": bp_history,
+        #     "weatherMessage": "",
+        #     "activityMessage": "",
+        #     "conditionMessage": "history"
+        # })
+
+        # data = response.get("data")
+        # errors = response.get("errors")
+
+        # if not errors:
+        #     llm_message_data = f"{data.get('body', '')}\n" if data else ""
+        #     logging.info(llm_message_data)
+        # else:
+        #     logging.error(errors)
+    else:
+        bp_history = f"{dict_weather.get("weather_time")}, {data_sbp}, {data_dbp};"
+        logging.warning("No data history available.")
+
+    logging.info(bp_history)
+
+    llm_on_recommendation = "Sample LLM response on recommendation"
+    is_normal_bp = dict_bp.get("is_normal_bp")
+    if is_normal_bp == 1:
+        logging.debug("is_normal_bp: True")
+
+        # # Call the Bedrock API with necessary parameters
+        # response = await amplify_client.queries.ask_bedrock({
+        #     "patientMessage": patient_info,
+        #     "weatherMessage": weather_message,
+        #     "activityMessage": patient_act,
+        #     "conditionMessage": "recommendation"
+        # })
+
+        # data = response.get("data")
+        # errors = response.get("errors")
+
+        # if not errors:
+        #     llm_message_rec = data.get("body", "")
+        # else:
+        #     logging.error(errors)
+
+    # Construct the output message
+    output_message = header_message + dict_bp.get("bp_message") + llm_on_history + llm_on_recommendation
+    logging.info(output_message)
+
+    # Construct the history entry
+    history_heading = f"{dict_weather.get("weather_time")}, SBP: {data_sbp}, DBP: {data_dbp}\n"
+    if not history_message:  # empty string
+        history_message = history_heading + output_message + "\n"
+    else:
+        history_message = history_message + "\n" + history_heading + output_message + "\n"
+    
+    logging.info(history_message)
 
 
 if __name__ == "__main__":
-    date_time = "2024-11-21T10:30:00-08"
-    city_name = "San Diego"
-    weather_info = get_weather(date_time, city_name)
-    logging.info(weather_info)
+
+    # TODO: load below data from file
+    input_dict = {
+        "patientName": "First, Last",
+        "patientSex": "F",
+        "patientAge": "65",
+        "patientAct": "exercise",
+        "data_sbp": "120",
+        "data_dbp": "80",
+        "location_city_name": "San Diego",
+        "record_data_time": "2024-11-21 10:30:00-08",
+        "history_bp": "",
+        "history_message": "Test History Message"
+    }
+
+    run_ai_pipeline_single_request(input_dict)
