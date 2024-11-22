@@ -2,13 +2,42 @@ import os
 import logging
 import requests
 from datetime import datetime, timezone, timedelta
+from openai import OpenAI
 from zoneinfo import ZoneInfo
+
+openai_client = OpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
+
+if openai_client.api_key is None:
+    logging.error("OPENAI_API_KEY environment variable is not set")
 
 weather_api_key = os.getenv('REACT_APP_WEATHER_API_KEY')
 if weather_api_key is None:
     logging.error("REACT_APP_WEATHER_API_KEY environment variable is not set")
 
 logging.basicConfig(filename='main.log', level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+
+def request_to_openai(prompt: str, model: str="gpt-4o-mini", client=openai_client) -> str:
+
+    try:
+        chat_completion = client.chat.completions.create(
+            model=model,
+            messages=[
+                # {"role": "system", "content": "You are a helpful assistant."},
+                {
+                    "role": "user",
+                    "content": prompt,
+                }
+            ],
+            max_tokens=500,
+            temperature=0,
+        )
+        logging.info(chat_completion)    
+        return chat_completion.choices[0].message.content
+    
+    except Exception as e:
+        logging.error(f"Error making API request to OpenAI: {e}")
+        return None
 
 
 def to_epoch_timestamp(date_time: any) -> int:
@@ -238,4 +267,7 @@ if __name__ == "__main__":
         "history_message": "Test History Message"
     }
 
-    run_ai_pipeline_single_request(input_dict)
+    # run_ai_pipeline_single_request(input_dict)
+    prompt = "You are a marraige relationship builder and adventurer, what are some ideas for things to do to celebrate my wife and my 6th marriage anniversary?"
+    response = request_to_openai(prompt=prompt)
+    logging.info(response)
