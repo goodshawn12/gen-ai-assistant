@@ -169,10 +169,10 @@ def get_weather(date_time: any, city_name: any) -> dict:
 def run_ai_pipeline_single_request(input_dict: dict):
 
     # Extract values from the input dictionary
-    patient_name = input_dict.get("patientName")
-    patient_sex = input_dict.get("patientSex")
-    patient_age = input_dict.get("patientAge")
-    patient_act = input_dict.get("patientAct")
+    patient_name = input_dict.get("patient_name")
+    patient_sex = input_dict.get("patient_sex")
+    patient_age = input_dict.get("patient_age")
+    patient_act = input_dict.get("patient_act")
     data_sbp = input_dict.get("data_sbp")
     data_dbp = input_dict.get("data_dbp")
     location_city_name = input_dict.get("location_city_name")
@@ -255,19 +255,19 @@ if __name__ == "__main__":
 
     # TODO: load below data from file
     input_dict = {
-        "patientName": "First, Last",
-        "patientSex": "F",
-        "patientAge": "65",
-        "patientAct": "exercise",
+        "patient_name": "First, Last",
+        "patient_sex": "F",
+        "patient_age": "65",
+        "patient_act": "exercise",
         "data_sbp": "120",
         "data_dbp": "80",
         "location_city_name": "San Diego",
         "record_data_time": "2024-11-21 10:30:00-08",
         "history_bp": "",
-        "history_message": "Test History Message"
+        "history_message": ""
     }
 
     # run_ai_pipeline_single_request(input_dict)
-    prompt = "You are a marraige relationship builder and adventurer, what are some ideas for things to do to celebrate my wife and my 6th marriage anniversary?"
+    prompt = "Tell me a joke"
     response = request_to_openai(prompt=prompt)
     logging.info(response)
